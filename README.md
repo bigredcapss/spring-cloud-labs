@@ -1,7 +1,7 @@
 # spring-cloud-labs
 SpringCloud及其相关组件学习
 ## 服务注册与发现
-[Eureka的使用][https://www.yuque.com/tiankongyiwusuoyouweihegeiwoanwei/kb/lbbq91]
+[Eureka的使用](https://www.yuque.com/tiankongyiwusuoyouweihegeiwoanwei/kb/lbbq91)
 
 ## 负载均衡
 [负载均衡之Ribbon][https://www.yuque.com/tiankongyiwusuoyouweihegeiwoanwei/kb/oere47]
