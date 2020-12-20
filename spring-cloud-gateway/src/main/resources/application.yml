@@ -1,0 +1,98 @@
+spring:
+  application:
+    name: spring-cloud-gateway
+  cloud:
+    gateway:
+      routes: # 路由配置项
+        - id: request_ratelimiter_route # 限流配置
+          uri: http://localhost:8080/
+          predicates:
+          - Path=/ratelimiter/**
+          filters:
+          - StripPrefix=1
+          - name: RequestRateLimiter
+            args:
+              keyResolver: '#{@ipAddressKeyResolver}'
+              redis-rate-limiter.replenishRate: 1 # 令牌桶的填充速率--允许用户每秒执行多少请求，而不丢弃任何请求
+              redis-rate-limiter.burstCapacity: 2 # 令牌桶可以保存的令牌数--允许用户在一秒钟内执行的最大请求数。将此值设置为零将阻止所有请求
+        - id: gateway_priedicate # 自定义断言配置
+          uri: http://localhost:8080/
+          predicates:
+          - Path=/gateway/**
+          - Auth=Authorization
+          filters:
+          - StripPrefix=1
+        - id: gateway_router # 负载均衡配置
+          uri: lb://spring-cloud-user-provider
+          predicates:
+          - Path=/gateway/**
+          filters:
+          - StripPrefix=1
+        - id: retry_route  # 重试配置
+          uri: http://localhost:8080/
+          predicates:
+          - Path=/retry/**
+          filters:
+          - StripPrefix=1
+          - name: Retry
+            args:
+              retries: 3
+              status: 503  # 当服务端返回的状态码是503的时候，才会重试
+        - id: define_route   # 自定义过滤器配置
+          uri: http://localhost:8080/
+          predicates:
+          - Path=/define/**
+          filters:
+          - StripPrefix=1
+          - LgDefine=GP_Mic
+#        - id: hystrix_router # 集成Hystrix
+#          uri: http://localhost:8080/
+#          predicates:
+#            - Path=/hystrix/**
+#          filters:
+#            - StripPrefix=1
+#            - name: Hystrix
+#              args:
+#                name: default
+#                # 注意降级回调这里是重定向
+#                fallbackUri: 'forward:/defaultFallback'
+        - id: order_router # 订单服务路由
+          uri: http://localhost:8091/
+          predicates:
+          - Path=/mymall/**
+          filters:
+          - StripPrefix=1
+      discovery: # 与注册中心的集成
+        locator:
+          lower-case-service-id: true
+          enabled: true
+  redis: # Redis配置
+    host: 192.168.137.136
+    port: 6379
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+      shutdown-timeout: 100ms
+    database: 0
+  zipkin:
+    base-url:  http://192.168.137.136:9411/
+  sleuth:
+    sampler:
+      probability: 1.0
+server:
+  port: 8082
+
+eureka: # Eureka作为注册中心
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+management: # 动态路由需要开启对应端点
+  endpoints:
+    web:
+      exposure:
+        include: "*,hystrix.stream"
+
+
